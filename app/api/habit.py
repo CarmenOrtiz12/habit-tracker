@@ -59,6 +59,21 @@ def complete_habit(habit_id: int, completion: HabitCompletionCreate, db: Session
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Hábito no encontrado",
         )
+    
+    existing_completion = (
+        db.query(HabitCompletion)
+        .filter(
+            HabitCompletion.habit_id == habit.id,
+            HabitCompletion.completed_date == completion.completed_date,
+        )
+        .first()
+    )
+
+    if existing_completion:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Este hábito ya fue marcado como completado en esta fecha",
+        )
 
     habit_completion = HabitCompletion(
         habit_id=habit.id,
