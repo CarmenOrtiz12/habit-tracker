@@ -85,3 +85,30 @@ def complete_habit(habit_id: int, completion: HabitCompletionCreate, db: Session
     db.refresh(habit_completion)
 
     return habit_completion
+
+
+@router.get("/habits/{habit_id}/completions", response_model=list[HabitCompletionResponse])
+def get_habit_completions(habit_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    habit = (
+        db.query(Habit)
+        .filter(
+            Habit.id == habit_id,
+            Habit.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not habit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hábito no encontrado",
+        )
+
+    completions = (
+        db.query(HabitCompletion)
+        .filter(HabitCompletion.habit_id == habit.id)
+        .order_by(HabitCompletion.completed_date.desc())
+        .all()
+    )
+
+    return completions
