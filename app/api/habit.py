@@ -5,7 +5,7 @@ from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.habit import Habit
 from app.models.user import User
-from app.schemas.habit import HabitCreate, HabitResponse
+from app.schemas.habit import HabitCreate, HabitResponse, HabitUpdate
 from app.models.habit_completion import HabitCompletion
 from app.schemas.habit_completion import (
     HabitCompletionCreate,
@@ -112,3 +112,71 @@ def get_habit_completions(habit_id: int, db: Session = Depends(get_db), current_
     )
 
     return completions
+
+
+@router.get("/habits/{habit_id}", response_model=HabitResponse)
+def get_habit(habit_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    habit = (
+        db.query(Habit)
+        .filter(
+            Habit.id == habit_id,
+            Habit.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not habit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hábito no encontrado",
+        )
+
+    return habit
+
+
+@router.put("/habits/{habit_id}", response_model=HabitResponse)
+def update_habit(habit_id: int, habit_data: HabitUpdate, db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
+    habit = (
+        db.query(Habit)
+        .filter(
+            Habit.id == habit_id,
+            Habit.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not habit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hábito no encontrado",
+        )
+
+    habit.name = habit_data.name
+    habit.description = habit_data.description
+    habit.frequency = habit_data.frequency
+
+    db.commit()
+    db.refresh(habit)
+
+    return habit
+
+
+@router.delete("/habits/{habit_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_habit(habit_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    habit = (
+        db.query(Habit)
+        .filter(
+            Habit.id == habit_id,
+            Habit.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not habit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hábito no encontrado",
+        )
+
+    db.delete(habit)
+    db.commit()

@@ -15,3 +15,9 @@ class HabitResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class HabitUpdate(BaseModel):
+    name: str
+    description: str | None = None
+    frequency: str
