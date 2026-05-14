@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
+from datetime import date
 
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.habit import Habit
 from app.models.user import User
-from app.schemas.habit import HabitCreate, HabitResponse, HabitUpdate
+from app.schemas.habit import HabitCreate, HabitResponse, HabitUpdate, HabitTodayResponse
 from app.models.habit_completion import HabitCompletion
 from app.schemas.habit_completion import (
     HabitCompletionCreate,
@@ -85,6 +86,42 @@ def complete_habit(habit_id: int, completion: HabitCompletionCreate, db: Session
     db.refresh(habit_completion)
 
     return habit_completion
+
+
+@router.get("/habits/today", response_model=list[HabitTodayResponse])
+def get_today_habits(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    today = date.today()
+
+    habits = (
+        db.query(Habit)
+        .filter(Habit.user_id == current_user.id)
+        .all()
+    )
+
+    response = []
+
+    for habit in habits:
+        completion = (
+            db.query(HabitCompletion)
+            .filter(
+                HabitCompletion.habit_id == habit.id,
+                HabitCompletion.completed_date == today,
+            )
+            .first()
+        )
+
+        response.append(
+            HabitTodayResponse(
+                id=habit.id,
+                name=habit.name,
+                description=habit.description,
+                frequency=habit.frequency,
+                completed_today=completion is not None,
+                completed_date=completion.completed_date if completion else None,
+            )
+        )
+
+    return response
 
 
 @router.get("/habits/{habit_id}/completions", response_model=list[HabitCompletionResponse])
