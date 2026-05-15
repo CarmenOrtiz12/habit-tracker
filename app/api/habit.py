@@ -95,6 +95,52 @@ def complete_habit(habit_id: int, completion: HabitCompletionCreate, db: Session
     return habit_completion
 
 
+@router.post("/habits/{habit_id}/complete-today", response_model=HabitCompletionResponse,  status_code=status.HTTP_201_CREATED)
+def complete_habit_today(habit_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    today = date.today()
+
+    habit = (
+        db.query(Habit)
+        .filter(
+            Habit.id == habit_id,
+            Habit.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not habit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hábito no encontrado",
+        )
+
+    existing_completion = (
+        db.query(HabitCompletion)
+        .filter(
+            HabitCompletion.habit_id == habit.id,
+            HabitCompletion.completed_date == today,
+        )
+        .first()
+    )
+
+    if existing_completion:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Este hábito ya fue marcado como completado hoy",
+        )
+
+    habit_completion = HabitCompletion(
+        habit_id=habit.id,
+        completed_date=today,
+    )
+
+    db.add(habit_completion)
+    db.commit()
+    db.refresh(habit_completion)
+
+    return habit_completion
+
+
 @router.get("/habits/today", response_model=list[HabitTodayResponse])
 def get_today_habits(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     today = date.today()
