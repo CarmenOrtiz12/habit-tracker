@@ -32,3 +32,9 @@ class HabitTodayResponse(BaseModel):
     completed_today: bool
     completed_date: date | None = None
     streak: int
+
+
+class HabitStatsResponse(BaseModel):
+    total_habits: int
+    completed_today: int
+    pending_today: int

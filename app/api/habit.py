@@ -6,7 +6,13 @@ from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.habit import Habit
 from app.models.user import User
-from app.schemas.habit import HabitCreate, HabitResponse, HabitUpdate, HabitTodayResponse
+from app.schemas.habit import (
+    HabitCreate,
+    HabitResponse,
+    HabitUpdate,
+    HabitTodayResponse,
+    HabitStatsResponse,
+)
 from app.models.habit_completion import HabitCompletion
 from app.schemas.habit_completion import (
     HabitCompletionCreate,
@@ -132,6 +138,35 @@ def get_today_habits(db: Session = Depends(get_db), current_user: User = Depends
         )
 
     return response
+
+
+@router.get("/habits/stats", response_model=HabitStatsResponse)
+def get_habit_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    today = date.today()
+
+    habits = (
+        db.query(Habit)
+        .filter(Habit.user_id == current_user.id)
+        .all()
+    )
+
+    total_habits = len(habits)
+
+    completed_today = (
+        db.query(HabitCompletion)
+        .join(Habit)
+        .filter(
+            Habit.user_id == current_user.id,
+            HabitCompletion.completed_date == today,
+        )
+        .count()
+    )
+
+    return HabitStatsResponse(
+        total_habits=total_habits,
+        completed_today=completed_today,
+        pending_today=total_habits - completed_today,
+    )
 
 
 @router.get("/habits/{habit_id}/completions", response_model=list[HabitCompletionResponse])
