@@ -12,6 +12,7 @@ from app.schemas.habit_completion import (
     HabitCompletionCreate,
     HabitCompletionResponse,
 )
+from .utils import calculate_streak
 
 router = APIRouter()
 
@@ -110,6 +111,14 @@ def get_today_habits(db: Session = Depends(get_db), current_user: User = Depends
             .first()
         )
 
+        all_completions = (
+            db.query(HabitCompletion)
+            .filter(HabitCompletion.habit_id == habit.id)
+            .all()
+        )
+
+        streak = calculate_streak(all_completions)
+
         response.append(
             HabitTodayResponse(
                 id=habit.id,
@@ -118,6 +127,7 @@ def get_today_habits(db: Session = Depends(get_db), current_user: User = Depends
                 frequency=habit.frequency,
                 completed_today=completion is not None,
                 completed_date=completion.completed_date if completion else None,
+                streak=streak,
             )
         )
 

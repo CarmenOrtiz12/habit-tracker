@@ -31,3 +31,4 @@ class HabitTodayResponse(BaseModel):
     frequency: str
     completed_today: bool
     completed_date: date | None = None
+    streak: int
