@@ -5,3 +5,5 @@ venv/
 .env.*
 *.log
 .DS_Store
+alembic/versions/__pycache__/
+.pytest_cache/
