@@ -17,8 +17,9 @@ app.include_router(habit_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173,"
-        "https://habit-tracker-web-steel.vercel.app,"],
+        "http://localhost:5173",
+        "https://habit-tracker-web-steel.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
